@@ -26,6 +26,9 @@ def load_training_data(csv_path):
 
 TRAINING_CONTEXT = load_training_data('training_data.csv')
 
+# Store chat sessions
+chat_sessions = {}
+
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -44,6 +47,8 @@ HTML_TEMPLATE = '''
     <button onclick="sendMessage()">Send</button>
 
     <script>
+    let sessionId = null;
+
     async function sendMessage() {
         const input = document.getElementById('user-input');
         const message = input.value;
@@ -57,9 +62,13 @@ HTML_TEMPLATE = '''
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({message: message})
+            body: JSON.stringify({
+                message: message,
+                session_id: sessionId
+            })
         });
         const data = await response.json();
+        sessionId = data.session_id;
         addMessage('Bot: ' + data.response);
     }
 
@@ -80,15 +89,26 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json['message']
-    
-    # Combine training context with user message
-    prompt = f"Here are examples of my communication style:\n{TRAINING_CONTEXT}\n\nPlease respond to this message in my style: {user_message}"
+    session_id = request.json.get('session_id')
     
     try:
-        response = model.generate_content(prompt)
-        return jsonify({'response': response.text})
+        if not session_id or session_id not in chat_sessions:
+            # Start new chat with context
+            chat = model.start_chat(history=[])
+            chat_sessions[chat.session_id] = chat
+            # Prime the chat with training context
+            chat.send_message(f"Here are examples of my communication style:\n{TRAINING_CONTEXT}\nPlease respond in this style for our conversation.")
+            session_id = chat.session_id
+        
+        chat = chat_sessions[session_id]
+        response = chat.send_message(user_message)
+        
+        return jsonify({
+            'response': response.text,
+            'session_id': session_id
+        })
     except Exception as e:
-        return jsonify({'response': f"Error: {str(e)}"})
+        return jsonify({'response': f"Error: {str(e)}", 'session_id': None})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
