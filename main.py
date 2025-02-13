@@ -92,13 +92,14 @@ def chat():
     session_id = request.json.get('session_id')
     
     try:
-        if not session_id or session_id not in chat_sessions:
-            # Start new chat with context
-            chat = model.start_chat(history=[])
-            chat_sessions[chat.session_id] = chat
+        if not session_id:
+            # Generate a new session ID
+            session_id = str(len(chat_sessions) + 1)
+            # Create new chat
+            chat = model.start_chat()
+            chat_sessions[session_id] = chat
             # Prime the chat with training context
             chat.send_message(f"Here are examples of my communication style:\n{TRAINING_CONTEXT}\nPlease respond in this style for our conversation.")
-            session_id = chat.session_id
         
         chat = chat_sessions[session_id]
         response = chat.send_message(user_message)
