@@ -17,7 +17,7 @@ def load_training_data(csv_path):
     try:
         df = pd.read_csv(csv_path)
         context = "\n".join([
-            f"Q: {row['question']} A: {row['answer']}"
+            f"Example message: {row['Text']}"
             for _, row in df.iterrows()
         ])
         return context
@@ -82,7 +82,7 @@ def chat():
     user_message = request.json['message']
     
     # Combine training context with user message
-    prompt = f"{TRAINING_CONTEXT}\nNow respond in my style to: {user_message}"
+    prompt = f"Here are examples of my communication style:\n{TRAINING_CONTEXT}\n\nPlease respond to this message in my style: {user_message}"
     
     try:
         response = model.generate_content(prompt)
