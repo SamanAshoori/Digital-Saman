@@ -4,27 +4,36 @@ from flask import Flask, request, jsonify, render_template_string
 import google.generativeai as genai
 import pandas as pd
 from dotenv import load_dotenv
+from google.ai.generativelanguage_v1beta.types import content
 
 app = Flask(__name__)
 load_dotenv()
 
 # Configure Gemini
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')
 
-# Load training data
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+}
+
 def load_training_data(csv_path):
     try:
-        df = pd.read_csv(csv_path)
-        context = "\n".join([
-            f"Example message: {row['Text']}"
-            for _, row in df.iterrows()
-        ])
-        return context
-    except:
-        return "No training data available."
+        file = genai.upload_file(csv_path, mime_type="text/csv")
+        return file
+    except Exception as e:
+        print(f"Error loading training data: {e}")
+        return None
 
-TRAINING_CONTEXT = load_training_data('training_data.csv')
+# Initialize model with configuration
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    generation_config=generation_config,
+    system_instruction="use training_data.csv for my tone and style"
+)
 
 # Store chat sessions
 chat_sessions = {}
@@ -33,7 +42,7 @@ HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Chat</title>
+    <title>Digital Saman Chat</title>
     <style>
         body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial; }
         #chat-container { height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
@@ -54,11 +63,9 @@ HTML_TEMPLATE = '''
         const message = input.value;
         if (!message) return;
 
-        // Display user message
         addMessage('User: ' + message);
         input.value = '';
 
-        // Get bot response
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -69,7 +76,7 @@ HTML_TEMPLATE = '''
         });
         const data = await response.json();
         sessionId = data.session_id;
-        addMessage('Bot: ' + data.response);
+        addMessage('Digital Saman: ' + data.response);
     }
 
     function addMessage(message) {
@@ -93,13 +100,24 @@ def chat():
     
     try:
         if not session_id:
-            # Generate a new session ID
+            training_file = load_training_data('training_data.csv')
+            chat = model.start_chat(history=[
+                {
+                    "role": "user",
+                    "parts": [
+                        training_file,
+                        "Hello - You are a chatbot called Digital Saman. I as the original saman want a digital me to upload as portfolio project. your job is to emulate my style of talking",
+                    ],
+                },
+                {
+                    "role": "model",
+                    "parts": [
+                        "Understood. I'm Digital Saman, ready to emulate your style! Let's do this. What's on your mind?\n",
+                    ],
+                }
+            ])
             session_id = str(len(chat_sessions) + 1)
-            # Create new chat
-            chat = model.start_chat()
             chat_sessions[session_id] = chat
-            # Prime the chat with training context
-            chat.send_message(f"Here are examples of my communication style:\n{TRAINING_CONTEXT}\nPlease respond in this style for our conversation.")
         
         chat = chat_sessions[session_id]
         response = chat.send_message(user_message)
