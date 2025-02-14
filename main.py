@@ -166,6 +166,13 @@ HTML_TEMPLATE = '''
         container.innerHTML += '<div>' + message + '</div>';
         container.scrollTop = container.scrollHeight;
     }
+
+    // Add event listener for Enter key
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
     </script>
 </body>
 </html>
