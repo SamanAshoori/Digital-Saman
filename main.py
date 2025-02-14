@@ -1,10 +1,7 @@
-
 import os
 from flask import Flask, request, jsonify, render_template_string
 import google.generativeai as genai
-import pandas as pd
 from dotenv import load_dotenv
-from google.ai.generativelanguage_v1beta.types import content
 
 app = Flask(__name__)
 load_dotenv()
@@ -20,79 +17,74 @@ generation_config = {
     "response_mime_type": "text/plain",
 }
 
-def load_training_data(csv_path):
-    try:
-        file = genai.upload_file(csv_path, mime_type="text/csv")
-        return file
-    except Exception as e:
-        print(f"Error loading training data: {e}")
-        return None
-
-# Initialize model with configuration
+# Initialize model
 model = genai.GenerativeModel(
     model_name="gemini-2.0-flash",
     generation_config=generation_config,
-    system_instruction="use training_data.csv for my tone and style\nEnglish - UK - England\nZoomer / GenZ (but not overly)"
-)
+    system_instruction=
+    "Use training_data.csv for my tone and style. Plain Text Only \n ")
 
 # Store chat sessions
 chat_sessions = {}
 
-HTML_TEMPLATE = '''
+HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Digital Saman Chat</title>
     <style>
-        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial; }
-        #chat-container { height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-        #user-input { width: 80%; padding: 5px; }
-        button { padding: 5px 15px; }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Ensure body takes full viewport height */
-            padding: 20px; /* Consistent padding */
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial;
+            background-color: #121212; /* Dark background */
+            color: #e0e0e0;         /* Light text color */
         }
 
         #chat-container {
-            flex: 1; /* Allow chat container to grow and take up available space */
+            height: 400px;
             overflow-y: auto;
             border: 1px solid #333; /* Darker border */
             padding: 10px;
             margin-bottom: 10px;
             background-color: rgba(25, 25, 25, 0.9); /* Semi-transparent background */
-            border-radius: 8px; /* Rounded corners */
+            border-radius: 8px;
+        }
+
+        .user-message {
+            color: white;
+            text-align: right;
+            margin-bottom: 5px;
+            padding: 8px;
+            background-color: #333;
+            border-radius: 8px;
+            float: right;
+            clear: both;
+        }
+
+        .bot-message {
+            color: #00ff88; /* Green */
+            text-align: left;
+            margin-bottom: 5px;
+            padding: 8px;
+            background-color: #222;
+            border-radius: 8px;
+            float: left;
+            clear: both;
         }
 
         #chat-container div {
-            margin-bottom: 5px; /* Spacing between messages */
-        }
-
-        #chat-container div:nth-child(even) { /* Style every even message (Digital Saman) */
-            color: #00ff88; /* Green text for Digital Saman */
+            clear: both; /* Crucial for correct chat flow */
         }
 
         #user-input {
-            width: calc(80% - 10px); /* Adjust width for button and padding */
+            width: calc(80% - 10px);
             padding: 10px;
-            background-color: rgba(255, 255, 255, 0.05); /* Input background */
+            background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid #333;
             color: #e0e0e0;
             border-radius: 8px;
-            font-family: 'Inter', sans-serif;
         }
 
         button {
@@ -104,31 +96,7 @@ HTML_TEMPLATE = '''
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.3s ease;
-            margin-left: 10px; /* Space between input and button */
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-        }
-
-        /* Optional: Style the scrollbar */
-        #chat-container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #chat-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1); 
-            border-radius: 4px;
-        }
-
-        #chat-container::-webkit-scrollbar-thumb {
-            background: #00ff88;
-            border-radius: 4px;
-        }
-
-        #chat-container::-webkit-scrollbar-thumb:hover {
-            background: #00cc66;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -138,90 +106,84 @@ HTML_TEMPLATE = '''
     <button onclick="sendMessage()">Send</button>
 
     <script>
-    let sessionId = null;
+        let sessionId = null;
 
-    async function sendMessage() {
-        const input = document.getElementById('user-input');
-        const message = input.value;
-        if (!message) return;
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value;
+            if (!message) return;
 
-        addMessage('User: ' + message);
-        input.value = '';
+            addMessage('User: ' + message, true); // Add user message
+            input.value = '';
 
-        const response = await fetch('/chat', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                message: message,
-                session_id: sessionId
-            })
-        });
-        const data = await response.json();
-        sessionId = data.session_id;
-        addMessage('Digital Saman: ' + data.response);
-    }
-
-    function addMessage(message) {
-        const container = document.getElementById('chat-container');
-        container.innerHTML += '<div>' + message + '</div>';
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // Add event listener for Enter key
-    document.getElementById('user-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message: message,
+                    session_id: sessionId
+                })
+            });
+            const data = await response.json();
+            sessionId = data.session_id;
+            addMessage('Digital Saman: ' + data.response, false); // Add bot message
         }
-    });
+
+        function addMessage(message, isUser) {
+            const container = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'user-message' : 'bot-message';
+            messageDiv.textContent = message; // Important for security
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
     </script>
 </body>
 </html>
-'''
+"""
+
 
 @app.route('/')
 def home():
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/embed')
-def embed():
-    embedded_template = HTML_TEMPLATE.replace('<body>', '<body style="margin: 0; padding: 10px;">')
-    return render_template_string(embedded_template)
 
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json['message']
     session_id = request.json.get('session_id')
-    
+
     try:
         if not session_id:
-            training_file = load_training_data('training_data.csv')
-            chat = model.start_chat(history=[
-                {
-                    "role": "user",
-                    "parts": [
-                        training_file,
-                        "Hello - You are a chatbot called Digital Saman. I as the original saman want a digital me to upload as portfolio project. your job is to emulate my style of talking",
-                    ],
-                },
-                {
-                    "role": "model",
-                    "parts": [
-                        "Understood. I'm Digital Saman, ready to emulate your style! Let's do this. What's on your mind?\n",
-                    ],
-                }
-            ])
+            chat = model.start_chat(history=[{
+                "role":
+                "user",
+                "parts": [
+                    "Hello - You are a chatbot called Digital Saman. Created by Original Saman - to emulate him on his website, Please ask the user what their name and relation to saman is. You will use this information to create a personalized chat experience for the user. You will also decide whether or not to use profanity based on if the user uses profanity."
+                ],
+            }, {
+                "role":
+                "model",
+                "parts":
+                ["Understood. I'm Digital Saman, ready to emulate his style."],
+            }])
             session_id = str(len(chat_sessions) + 1)
             chat_sessions[session_id] = chat
-        
+
         chat = chat_sessions[session_id]
         response = chat.send_message(user_message)
-        
-        return jsonify({
-            'response': response.text,
-            'session_id': session_id
-        })
+
+        return jsonify({'response': response.text, 'session_id': session_id})
     except Exception as e:
         return jsonify({'response': f"Error: {str(e)}", 'session_id': None})
 
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000,
+            debug=True)  # debug=True for easier development
