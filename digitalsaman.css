@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Ensure body takes full viewport height */
+    padding: 20px; /* Consistent padding */
+}
+
+#chat-container {
+    flex: 1; /* Allow chat container to grow and take up available space */
+    overflow-y: auto;
+    border: 1px solid #333; /* Darker border */
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: rgba(25, 25, 25, 0.9); /* Semi-transparent background */
+    border-radius: 8px; /* Rounded corners */
+}
+
+#chat-container div {
+    margin-bottom: 5px; /* Spacing between messages */
+}
+
+#chat-container div:nth-child(even) { /* Style every even message (Digital Saman) */
+    color: #00ff88; /* Green text for Digital Saman */
+}
+
+#user-input {
+    width: calc(80% - 10px); /* Adjust width for button and padding */
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05); /* Input background */
+    border: 1px solid #333;
+    color: #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+button {
+    width: 20%;
+    padding: 10px;
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    color: #121212;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    margin-left: 10px; /* Space between input and button */
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* Optional: Style the scrollbar */
+#chat-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1); 
+    border-radius: 4px;
+}
+
+#chat-container::-webkit-scrollbar-thumb {
+    background: #00ff88;
+    border-radius: 4px;
+}
+
+#chat-container::-webkit-scrollbar-thumb:hover {
+    background: #00cc66;
+}
