@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, request, jsonify, render_template_string
 import google.generativeai as genai
@@ -5,12 +6,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from google.ai.generativelanguage_v1beta.types import content
 
-app = Flask(__name__, static_url_path='/static', static_folder='static')
+app = Flask(__name__)
 load_dotenv()
-
-@app.route('/digitalsaman.css')
-def serve_css():
-    return app.send_static_file('digitalsaman.css')
 
 # Configure Gemini
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
@@ -23,7 +20,6 @@ generation_config = {
     "response_mime_type": "text/plain",
 }
 
-
 def load_training_data(csv_path):
     try:
         file = genai.upload_file(csv_path, mime_type="text/csv")
@@ -32,12 +28,12 @@ def load_training_data(csv_path):
         print(f"Error loading training data: {e}")
         return None
 
-
 # Initialize model with configuration
 model = genai.GenerativeModel(
     model_name="gemini-2.0-flash",
     generation_config=generation_config,
-    system_instruction="use training_data.csv for my tone and style")
+    system_instruction="use training_data.csv for my tone and style\nEnglish - UK - England\nZoomer / GenZ (but not overly)"
+)
 
 # Store chat sessions
 chat_sessions = {}
@@ -47,7 +43,94 @@ HTML_TEMPLATE = '''
 <html>
 <head>
     <title>Digital Saman Chat</title>
-    <link rel="stylesheet" href="/static/digitalsaman.css">
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial; }
+        #chat-container { height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        #user-input { width: 80%; padding: 5px; }
+        button { padding: 5px 15px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            padding: 20px; /* Consistent padding */
+        }
+
+        #chat-container {
+            flex: 1; /* Allow chat container to grow and take up available space */
+            overflow-y: auto;
+            border: 1px solid #333; /* Darker border */
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: rgba(25, 25, 25, 0.9); /* Semi-transparent background */
+            border-radius: 8px; /* Rounded corners */
+        }
+
+        #chat-container div {
+            margin-bottom: 5px; /* Spacing between messages */
+        }
+
+        #chat-container div:nth-child(even) { /* Style every even message (Digital Saman) */
+            color: #00ff88; /* Green text for Digital Saman */
+        }
+
+        #user-input {
+            width: calc(80% - 10px); /* Adjust width for button and padding */
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05); /* Input background */
+            border: 1px solid #333;
+            color: #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button {
+            width: 20%;
+            padding: 10px;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #121212;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-left: 10px; /* Space between input and button */
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Optional: Style the scrollbar */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1); 
+            border-radius: 4px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb {
+            background: #00ff88;
+            border-radius: 4px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #00cc66;
+        }
+    </style>
 </head>
 <body>
     <div id="chat-container"></div>
@@ -88,51 +171,50 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-
 @app.route('/')
 def home():
     return render_template_string(HTML_TEMPLATE)
 
-
 @app.route('/embed')
 def embed():
-    embedded_template = HTML_TEMPLATE.replace(
-        '<body>', '<body style="margin: 0; padding: 10px;">')
+    embedded_template = HTML_TEMPLATE.replace('<body>', '<body style="margin: 0; padding: 10px;">')
     return render_template_string(embedded_template)
-
 
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json['message']
     session_id = request.json.get('session_id')
-
+    
     try:
         if not session_id:
             training_file = load_training_data('training_data.csv')
-            chat = model.start_chat(history=[{
-                "role":
-                "user",
-                "parts": [
-                    training_file,
-                    "Hello - You are a chatbot called Digital Saman. I as the original saman want a digital me to upload as portfolio project. your job is to emulate my style of talking",
-                ],
-            }, {
-                "role":
-                "model",
-                "parts": [
-                    "Understood. I'm Digital Saman, ready to emulate your style! Let's do this. What's on your mind?\n",
-                ],
-            }])
+            chat = model.start_chat(history=[
+                {
+                    "role": "user",
+                    "parts": [
+                        training_file,
+                        "Hello - You are a chatbot called Digital Saman. I as the original saman want a digital me to upload as portfolio project. your job is to emulate my style of talking",
+                    ],
+                },
+                {
+                    "role": "model",
+                    "parts": [
+                        "Understood. I'm Digital Saman, ready to emulate your style! Let's do this. What's on your mind?\n",
+                    ],
+                }
+            ])
             session_id = str(len(chat_sessions) + 1)
             chat_sessions[session_id] = chat
-
+        
         chat = chat_sessions[session_id]
         response = chat.send_message(user_message)
-
-        return jsonify({'response': response.text, 'session_id': session_id})
+        
+        return jsonify({
+            'response': response.text,
+            'session_id': session_id
+        })
     except Exception as e:
         return jsonify({'response': f"Error: {str(e)}", 'session_id': None})
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
