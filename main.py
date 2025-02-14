@@ -93,6 +93,11 @@ HTML_TEMPLATE = '''
 def home():
     return render_template_string(HTML_TEMPLATE)
 
+@app.route('/embed')
+def embed():
+    embedded_template = HTML_TEMPLATE.replace('<body>', '<body style="margin: 0; padding: 10px;">')
+    return render_template_string(embedded_template)
+
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json['message']
