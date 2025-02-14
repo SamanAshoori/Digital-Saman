@@ -6,10 +6,8 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 load_dotenv()
 
-# Configure Gemini
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
-# Configure generation parameters
 generation_config = {
     "temperature": 1,
     "top_p": 0.95,
@@ -29,7 +27,6 @@ model = genai.GenerativeModel(
     generation_config=generation_config,
     system_instruction="use training_data.csv for my tone and style")
 
-# Store chat sessions
 chat_sessions = {}
 
 # Initial chat history
