@@ -5,7 +5,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from google.ai.generativelanguage_v1beta.types import content
 
-app = Flask(__name__, static_url_path='')
+app = Flask(__name__, static_url_path='/static', static_folder='static')
 load_dotenv()
 
 @app.route('/digitalsaman.css')
@@ -47,7 +47,7 @@ HTML_TEMPLATE = '''
 <html>
 <head>
     <title>Digital Saman Chat</title>
-    <link rel="stylesheet" href="/digitalsaman.css">
+    <link rel="stylesheet" href="/static/digitalsaman.css">
 </head>
 <body>
     <div id="chat-container"></div>
