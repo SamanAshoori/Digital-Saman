@@ -5,8 +5,12 @@ import pandas as pd
 from dotenv import load_dotenv
 from google.ai.generativelanguage_v1beta.types import content
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 load_dotenv()
+
+@app.route('/digitalsaman.css')
+def serve_css():
+    return app.send_static_file('digitalsaman.css')
 
 # Configure Gemini
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
