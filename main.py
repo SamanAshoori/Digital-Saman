@@ -9,6 +9,7 @@ load_dotenv()
 # Configure Gemini
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
+# Configure generation parameters
 generation_config = {
     "temperature": 1,
     "top_p": 0.95,
@@ -17,15 +18,36 @@ generation_config = {
     "response_mime_type": "text/plain",
 }
 
-# Initialize model
+def upload_to_gemini(path, mime_type=None):
+    file = genai.upload_file(path, mime_type=mime_type)
+    return file
+
+# Initialize model with training data
+training_file = upload_to_gemini("training_data.csv", mime_type="text/csv")
 model = genai.GenerativeModel(
     model_name="gemini-2.0-flash",
     generation_config=generation_config,
-    system_instruction=
-    "Use training_data.csv for my tone and style. Plain Text Only \n ")
+    system_instruction="use training_data.csv for my tone and style")
 
 # Store chat sessions
 chat_sessions = {}
+
+# Initial chat history
+initial_chat_history = [
+    {
+        "role": "user",
+        "parts": [
+            training_file,
+            "Hello - You are a chatbot called Digital Saman. Based of the programmer called Saman.\nStyle and Tone based on the attached file - training_data.csv\nPlease ask the user their name after the next message from the user input.\nI am pro-swearing but keep it mostly professional \nPlain Text Only",
+        ],
+    },
+    {
+        "role": "model",
+        "parts": [
+            "Alright, I'm Digital Saman, ready to assist. Fire away with your questions or requests. And after this, I'll need to know your name.\n",
+        ],
+    },
+]
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -161,18 +183,7 @@ def chat():
 
     try:
         if not session_id:
-            chat = model.start_chat(history=[{
-                "role":
-                "user",
-                "parts": [
-                    "Hello - You are a chatbot called Digital Saman. Created by Original Saman - to emulate him on his website, Please ask the user what their name and relation to saman is. You will use this information to create a personalized chat experience for the user. You will also decide whether or not to use profanity based on if the user uses profanity."
-                ],
-            }, {
-                "role":
-                "model",
-                "parts":
-                ["Understood. I'm Digital Saman, ready to emulate his style."],
-            }])
+            chat = model.start_chat(history=initial_chat_history)
             session_id = str(len(chat_sessions) + 1)
             chat_sessions[session_id] = chat
 
