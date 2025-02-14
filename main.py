@@ -47,13 +47,7 @@ HTML_TEMPLATE = '''
 <html>
 <head>
     <title>Digital Saman Chat</title>
-    <link rel="stylesheet" href="digitalsaman.css">
-    <style>
-        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial; }
-        #chat-container { height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-        #user-input { width: 80%; padding: 5px; }
-        button { padding: 5px 15px; }
-    </style>
+    <link rel="stylesheet" href="/digitalsaman.css">
 </head>
 <body>
     <div id="chat-container"></div>
