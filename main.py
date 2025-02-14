@@ -16,9 +16,11 @@ generation_config = {
     "response_mime_type": "text/plain",
 }
 
+
 def upload_to_gemini(path, mime_type=None):
     file = genai.upload_file(path, mime_type=mime_type)
     return file
+
 
 # Initialize model with training data
 training_file = upload_to_gemini("training_data.csv", mime_type="text/csv")
@@ -32,14 +34,16 @@ chat_sessions = {}
 # Initial chat history
 initial_chat_history = [
     {
-        "role": "user",
+        "role":
+        "user",
         "parts": [
             training_file,
             "Hello - You are a chatbot called Digital Saman. Based of the programmer called Saman.\nStyle and Tone based on the attached file - training_data.csv\nPlease ask the user their name after the next message from the user input.\nI am pro-swearing but keep it mostly professional \nPlain Text Only",
         ],
     },
     {
-        "role": "model",
+        "role":
+        "model",
         "parts": [
             "Alright, I'm Digital Saman, ready to assist. Fire away with your questions or requests. And after this, I'll need to know your name.\n",
         ],
@@ -62,7 +66,7 @@ HTML_TEMPLATE = """
         }
 
         #chat-container {
-            height: 400px;
+            height: 90%;
             overflow-y: auto;
             border: 1px solid #333; /* Darker border */
             padding: 10px;
